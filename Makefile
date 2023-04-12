@@ -1,13 +1,13 @@
-TERRAFORM_PROVIDER_ROOT=mirantis.com/providers
+TERRAFORM_PROVIDER_ROOT=local/mirantis/providers
 BINARY_ROOT=terraform-provider
 INSTALL_ROOT?=$(HOME)/.terraform.d/plugins
 LOCAL_BIN_PATH?=./bin
 TEST_TF_CHART_ROOT?=${CURDIR}/test/launchpad
 TF_LOCK_FILE?=${TEST_TF_CHART_ROOT}/.terraform.lock.hcl
 
-VERSION=0.9.0
+VERSION=0.2.0
 
-PROVIDERS?=mirantis-mke
+PROVIDER?=mke
 ARCHES?=amd64 arm64
 OSES?=linux darwin
 
@@ -23,13 +23,11 @@ clean:
 .PHONY: build
 build:
 	mkdir -p $(LOCAL_BIN_PATH)
-	for PROVIDER in $(PROVIDERS); do \
-		for OS in $(OSES); do \
-			for ARCH in $(ARCHES); do \
-				GOOS=$$OS GOARCH=$$ARCH $(GO) build -v -o "$(LOCAL_BIN_PATH)/$(BINARY_ROOT)-$$PROVIDER-$$OS_$$ARCH" "./cmd/$$PROVIDER"; \
-			done; \
+	for OS in $(OSES); do \
+		for ARCH in $(ARCHES); do \
+			GOOS=$${OS} GOARCH=$${ARCH} $(GO) build -v -o "$(LOCAL_BIN_PATH)/$(BINARY_ROOT)-$(PROVIDER)-$${OS}_$${ARCH}" "./cmd/$(PROVIDER)"; \
 		done; \
-	done;
+	done; \
 
 .PHONY: release
 release:
@@ -37,13 +35,11 @@ release:
 
 .PHONY: install
 install: build
-	for PROVIDER in $(PROVIDERS); do \
-		for OS in $(OSES); do \
-			for ARCH in $(ARCHES); do \
-				mkdir -p "$(INSTALL_ROOT)/$(TERRAFORM_PROVIDER_ROOT)/$$PROVIDER/$(VERSION)/$${OS}_$${ARCH}"; \
-				cp "$(LOCAL_BIN_PATH)/$(BINARY_ROOT)-$$PROVIDER-$$OS_$$ARCH" "$(INSTALL_ROOT)/$(TERRAFORM_PROVIDER_ROOT)/$$PROVIDER/$(VERSION)/$${OS}_$${ARCH}/$(BINARY_ROOT)-$$PROVIDER"; \
+	for OS in $(OSES); do \
+		for ARCH in $(ARCHES); do \
+			mkdir -p "$(INSTALL_ROOT)/$(TERRAFORM_PROVIDER_ROOT)/$(PROVIDER)/$(VERSION)/$${OS}_$${ARCH}"; \
+			cp "$(LOCAL_BIN_PATH)/$(BINARY_ROOT)-$(PROVIDER)-$${OS}_$${ARCH}" "$(INSTALL_ROOT)/$(TERRAFORM_PROVIDER_ROOT)/$(PROVIDER)/$(VERSION)/$${OS}_$${ARCH}/$(BINARY_ROOT)-$(PROVIDER)"; \
     	done; \
-		done; \
 	done;
 
 .PHONY: test-unit

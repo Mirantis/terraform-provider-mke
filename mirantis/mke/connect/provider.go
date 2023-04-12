@@ -80,13 +80,15 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 		return nil, diags
 	}
 
-	if err := c.ApiPing(ctx); err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "MKE endpoint is not healthy",
-			Detail:   err.Error(),
-		})
-		return nil, diags
+	if endpoint != "" {
+		if err := c.ApiPing(ctx); err != nil {
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "MKE endpoint is not healthy",
+				Detail:   err.Error(),
+			})
+			return nil, diags
+		}
 	}
 
 	return c, diags
