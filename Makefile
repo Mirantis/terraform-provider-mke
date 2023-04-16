@@ -1,13 +1,14 @@
-TERRAFORM_PROVIDER_ROOT=local/mirantis/providers
+TERRAFORM_PROVIDER_NAMESPACE=registry.terraform.io/mirantis
 BINARY_ROOT=terraform-provider
 INSTALL_ROOT?=$(HOME)/.terraform.d/plugins
 LOCAL_BIN_PATH?=./bin
 TEST_TF_CHART_ROOT?=${CURDIR}/test/launchpad
 TF_LOCK_FILE?=${TEST_TF_CHART_ROOT}/.terraform.lock.hcl
 
-VERSION=0.2.0
-
+TAG=$(shell git describe --tags)
+VERSION=$(TAG:v%=%)
 PROVIDER?=mke
+
 ARCHES?=amd64 arm64
 OSES?=linux darwin
 
@@ -15,10 +16,14 @@ GO=$(shell which go)
 
 default: install
 
+.PHONY: version
+version:
+	# $(VERSION)
+
 .PHONY: clean
 clean:
 	rm -rf "$(LOCAL_BIN_PATH)"
-	rm -rf "$(INSTALL_ROOT)/$(TERRAFORM_PROVIDER_ROOT)"
+	rm -rf "$(INSTALL_ROOT)/$(TERRAFORM_PROVIDER_NAMESPACE)/$(PROVIDER)"
 
 .PHONY: build
 build:
@@ -37,9 +42,9 @@ release:
 install: build
 	for OS in $(OSES); do \
 		for ARCH in $(ARCHES); do \
-			mkdir -p "$(INSTALL_ROOT)/$(TERRAFORM_PROVIDER_ROOT)/$(PROVIDER)/$(VERSION)/$${OS}_$${ARCH}"; \
-			cp "$(LOCAL_BIN_PATH)/$(BINARY_ROOT)-$(PROVIDER)-$${OS}_$${ARCH}" "$(INSTALL_ROOT)/$(TERRAFORM_PROVIDER_ROOT)/$(PROVIDER)/$(VERSION)/$${OS}_$${ARCH}/$(BINARY_ROOT)-$(PROVIDER)"; \
-    	done; \
+			mkdir -p "$(INSTALL_ROOT)/$(TERRAFORM_PROVIDER_NAMESPACE)/$(PROVIDER)/$(VERSION)/$${OS}_$${ARCH}"; \
+			cp "$(LOCAL_BIN_PATH)/$(BINARY_ROOT)-$(PROVIDER)-$${OS}_$${ARCH}" "$(INSTALL_ROOT)/$(TERRAFORM_PROVIDER_NAMESPACE)/$(PROVIDER)/$(VERSION)/$${OS}_$${ARCH}/$(BINARY_ROOT)-$(PROVIDER)_v$(VERSION)"; \
+		done; \
 	done;
 
 .PHONY: test-unit
@@ -67,7 +72,7 @@ test-acceptance: clean build install test-unit
 	rm -f ${TF_LOCK_FILE}
 	terraform -chdir=${TEST_TF_CHART_ROOT} init --upgrade
 	terraform -chdir=${TEST_TF_CHART_ROOT} apply -auto-approve
-	#terraform -chdir=${TEST_TF_CHART_ROOT} destroy -auto-approve
+	terraform -chdir=${TEST_TF_CHART_ROOT} destroy -auto-approve
 
 .PHONY: tf-destroy
 tf-destroy:
