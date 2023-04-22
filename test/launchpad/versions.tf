@@ -18,5 +18,9 @@ terraform {
       source  = "kreuzwerker/docker"
       version = "2.16.0"
     }
+    kubernetes = {
+      source = "hashicorp/kubernetes"
+      version = "2.19.0"
+	}
   }
 }

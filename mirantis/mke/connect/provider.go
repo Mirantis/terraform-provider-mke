@@ -51,16 +51,6 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 	password := d.Get("password").(string)
 	unsafeClient := d.Get("unsafe_ssl_client").(bool)
 
-	if (username == "") || (password == "") || (endpoint == "") {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to create MKE client",
-			Detail:   "Unable to create anonymous MKE client",
-		})
-
-		return nil, diags
-	}
-
 	var c client.Client
 	var clientErr error
 
@@ -71,21 +61,13 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 	}
 
 	if clientErr != nil {
+		diags = append(diags, diag.FromErr(clientErr)...)
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "Unable to create MKE client",
 			Detail:   "Unable to authenticate user for authenticated MKE client",
 		})
 
-		return nil, diags
-	}
-
-	if err := c.ApiPing(ctx); err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "MKE endpoint is not healthy",
-			Detail:   err.Error(),
-		})
 		return nil, diags
 	}
 
