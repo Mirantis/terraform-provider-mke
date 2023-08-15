@@ -5,10 +5,7 @@ before:
     # this is just an example and not a requirement for provider building/publishing
     - go mod tidy
 builds:
-- main: ./cmd/mirantis-mke
-  id: "terraform-provider-mke"
-  binary: "terraform-provider-mke_v{{ .Version }}"
-  env:
+- env:
     # goreleaser does not work with CGO, it could also complicate
     # usage by users in CI/CD systems like Terraform Cloud where
     # they are unable to install libraries.
@@ -19,9 +16,9 @@ builds:
   ldflags:
     - '-s -w -X main.version={{.Version}} -X main.commit={{.Commit}}'
   goos:
-    - linux
     - freebsd
     - windows
+    - linux
     - darwin
   goarch:
     - amd64
@@ -31,14 +28,15 @@ builds:
   ignore:
     - goos: darwin
       goarch: '386'
+  binary: '{{ .ProjectName }}_v{{ .Version }}'
 archives:
 - format: zip
-  name_template: 'terraform-provider-mke_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+  name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
 checksum:
   extra_files:
     - glob: 'terraform-registry-manifest.json'
-      name_template: 'terraform-provider-mke_{{ .Version }}_manifest.json'
-  name_template: 'terraform-provider-mke_{{ .Version }}_SHA256SUMS'
+      name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
+  name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
   algorithm: sha256
 signs:
   - artifacts: checksum
@@ -55,7 +53,7 @@ signs:
 release:
   extra_files:
     - glob: 'terraform-registry-manifest.json'
-      name_template: 'terraform-provider-mke_{{ .Version }}_manifest.json'
+      name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
   # If you want to manually examine the release before its live, uncomment this line:
   # draft: true
 changelog:

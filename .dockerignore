@@ -15,6 +15,8 @@ website/build
 website/node_modules
 .vagrant/
 *.backup
+.git
+.github
 ./*.tfstate
 .terraform/
 *.log
@@ -25,12 +27,3 @@ website/node_modules
 *.iml
 *.test
 *.iml
-
-website/vendor
-
-# Test exclusions
-!command/test-fixtures/**/*.tfstate
-!command/test-fixtures/**/.terraform/
-
-# Keep windows files with windows line endings
-*.winfile eol=crlf
