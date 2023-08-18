@@ -88,6 +88,7 @@ func (p *MKEProvider) Configure(ctx context.Context, req provider.ConfigureReque
 func (p *MKEProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewMKEClientBundleResource,
+		NewUserResource,
 	}
 }
 

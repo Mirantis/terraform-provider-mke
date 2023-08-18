@@ -19,7 +19,7 @@ func (c *Client) doAuthorizedRequest(req *http.Request) (*Response, error) {
 	return c.doRequest(req)
 }
 
-// doRequest perform http request, catch http errors and return body as io.ReaderCloser.
+// doRequest perform http request, catch http errors and return response as io.ReaderCloser.
 func (c *Client) doRequest(req *http.Request) (*Response, error) {
 	apiRes, err := c.HTTPClient.Do(req)
 	if err != nil {
