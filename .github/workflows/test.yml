@@ -31,9 +31,7 @@ jobs:
       - uses: actions/setup-go@v4.0.1
         with:
           go-version-file: 'go.mod'
-          cache: true
-      - run: go mod download
-      - run: go build -v .
+          cache: false
       - name: Run linters
         uses: golangci/golangci-lint-action@v3.6.0
         with:
