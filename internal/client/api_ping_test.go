@@ -3,7 +3,6 @@ package client_test
 import (
 	"context"
 	"net/http"
-	"net/url"
 	"testing"
 
 	"github.com/Mirantis/terraform-provider-mke/internal/client"
@@ -11,20 +10,13 @@ import (
 
 func TestGoodPing(t *testing.T) {
 	ctx := context.Background()
-	mockRequest := MockHandlerKey{
-		Path:   client.URLTargetForPing,
-		Method: http.MethodGet,
-	}
+	auth := commonTestAuth
 
-	svr := MockTestServer(nil, MockHandlerMap{
-		mockRequest: MockServerHandlerGeneratorReturnResponseStatus(http.StatusOK),
-	})
+	s := NewMockTestServer(&auth, t)
+	s.AddHandler(http.MethodGet, client.URLTargetForPing, MockServerHandlerGeneratorReturnResponseStatus(http.StatusOK))
+	defer s.Close()
 
-	url, _ := url.Parse(svr.URL)
-	c, err := client.NewClient(url, nil, svr.Client())
-	if err != nil {
-		t.Fatalf("Could not make a client: %s", err)
-	}
+	c, _ := s.Client()
 
 	if err := c.ApiPing(ctx); err != nil {
 		t.Fatalf("Could not make a ping: %s", err)
@@ -33,20 +25,13 @@ func TestGoodPing(t *testing.T) {
 
 func TestNotFoundPing(t *testing.T) {
 	ctx := context.Background()
-	mockRequest := MockHandlerKey{
-		Path:   client.URLTargetForPing,
-		Method: http.MethodGet,
-	}
+	auth := commonTestAuth
 
-	svr := MockTestServer(nil, MockHandlerMap{
-		mockRequest: MockServerHandlerGeneratorReturnResponseStatus(http.StatusNotFound),
-	})
+	s := NewMockTestServer(&auth, t)
+	s.AddHandler(http.MethodGet, client.URLTargetForPing, MockServerHandlerGeneratorReturnResponseStatus(http.StatusNotFound))
+	defer s.Close()
 
-	url, _ := url.Parse(svr.URL)
-	c, err := client.NewClient(url, nil, svr.Client())
-	if err != nil {
-		t.Fatalf("Could not make a client: %s", err)
-	}
+	c, _ := s.Client()
 
 	if err := c.ApiPing(ctx); err == nil {
 		t.Fatalf("Ping was expected to fail: %s", err)

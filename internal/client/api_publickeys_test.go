@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"testing"
 
 	"github.com/Mirantis/terraform-provider-mke/internal/client"
@@ -12,15 +11,8 @@ import (
 
 func TestSimpleGetKeys(t *testing.T) {
 	ctx := context.Background()
-	auth := client.Auth{
-		Username: "myuser",
-		Password: "mypassword",
-		Token:    "mytoken",
-	}
-	mockRequest := MockHandlerKey{
-		Path:   fmt.Sprintf(client.URLTargetPatternForPublicKeys, auth.Username),
-		Method: http.MethodGet,
-	}
+
+	auth := commonTestAuth
 	keysResp := client.GetKeysResponse{
 		AccountPubKeys: []client.AccountPublicKey{
 			{
@@ -29,15 +21,10 @@ func TestSimpleGetKeys(t *testing.T) {
 		},
 	}
 
-	svr := MockTestServer(&auth, MockHandlerMap{
-		mockRequest: MockServerHandlerGeneratorReturnJson(keysResp),
-	})
+	s := NewMockTestServer(&auth, t)
+	s.AddHandler(http.MethodGet, fmt.Sprintf(client.URLTargetPatternForPublicKeys, auth.Username), MockServerHandlerGeneratorReturnJson(keysResp))
 
-	u, _ := url.Parse(svr.URL)
-	c, err := client.NewClient(u, &auth, svr.Client())
-	if err != nil {
-		t.Fatalf("Could not make a client: %s", err)
-	}
+	c, _ := s.Client()
 
 	keys, err := c.ApiPublicKeyList(ctx, auth.Username)
 	if err != nil {
@@ -50,31 +37,32 @@ func TestSimpleGetKeys(t *testing.T) {
 
 }
 
-func TestSimpleDeleteKey(t *testing.T) {
+func TestDeleteKeySuccess(t *testing.T) {
 	ctx := context.Background()
-	auth := client.Auth{
-		Username: "myuser",
-		Password: "mypassword",
-		Token:    "mytoken",
-	}
+	auth := commonTestAuth
 	keyID := "ASDFASDF"
-	mockRequest := MockHandlerKey{
-		Path:   fmt.Sprintf(client.URLTargetPatternForPublicKey, auth.Username, keyID),
-		Method: http.MethodDelete,
-	}
 
-	svr := MockTestServer(&auth, MockHandlerMap{
-		mockRequest: MockServerHandlerGeneratorReturnResponseStatus(http.StatusOK),
-	})
+	s := NewMockTestServer(&auth, t)
+	s.AddHandler(http.MethodDelete, fmt.Sprintf(client.URLTargetPatternForPublicKey, auth.Username, keyID), MockServerHandlerGeneratorReturnResponseStatus(http.StatusOK))
 
-	u, _ := url.Parse(svr.URL)
-	c, err := client.NewClient(u, &auth, svr.Client())
-	if err != nil {
-		t.Fatalf("Could not make a client: %s", err)
-	}
+	c, _ := s.Client()
 
 	if err := c.ApiPublicKeyDelete(ctx, auth.Username, keyID); err != nil {
 		t.Fatalf("Failed to delete key: %s", err)
 	}
+}
 
+func TestDeleteKeyFailure(t *testing.T) {
+	ctx := context.Background()
+	auth := commonTestAuth
+	keyID := "ASDFASDF"
+
+	s := NewMockTestServer(&auth, t)
+	s.AddHandler(http.MethodDelete, fmt.Sprintf(client.URLTargetPatternForPublicKey, auth.Username, keyID), MockServerHandlerGeneratorReturnResponseStatus(http.StatusNotFound))
+
+	c, _ := s.Client()
+
+	if err := c.ApiPublicKeyDelete(ctx, auth.Username, keyID); err == nil {
+		t.Fatalf("Did not receive expected delete error")
+	}
 }

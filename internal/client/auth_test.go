@@ -13,28 +13,19 @@ import (
 
 func TestGoodAuthorizedRequest(t *testing.T) {
 	ctx := context.Background()
-	auth := client.Auth{
-		Username: "myuser",
-		Password: "mypassword",
-		Token:    "mytoken",
-	}
-	mockRequest := MockHandlerKey{
-		Path:   "mypath",
-		Method: http.MethodGet,
-	}
+	auth := commonTestAuth
+
+	method := http.MethodGet
+	path := "mypath"
 	expectedRespBodyBytes := []byte("myresponse")
 
-	svr := MockTestServer(&auth, MockHandlerMap{
-		mockRequest: MockServerHandlerGeneratorReturnBytes(expectedRespBodyBytes),
-	})
+	s := NewMockTestServer(&auth, t)
+	s.AddHandler(method, path, MockServerHandlerGeneratorReturnBytes(expectedRespBodyBytes))
+	defer s.Close()
 
-	url, _ := url.Parse(svr.URL)
-	c, err := client.NewClient(url, &auth, svr.Client())
-	if err != nil {
-		t.Fatalf("Could not make a client: %s", err)
-	}
+	c, _ := s.Client()
 
-	req, err := c.RequestFromTargetAndBytesBody(ctx, mockRequest.Method, mockRequest.Path, []byte{})
+	req, err := c.RequestFromTargetAndBytesBody(ctx, method, path, []byte{})
 	if err != nil {
 		t.Fatalf("Could not make a request: %s", err)
 	}
@@ -42,37 +33,36 @@ func TestGoodAuthorizedRequest(t *testing.T) {
 	if _, err := c.ApiAuthorizedGeneric(ctx, req); err != nil {
 		t.Errorf("Authorized request execute failed: %s", err)
 	}
-
 }
 
 func TestBadAuthorizedRequest(t *testing.T) {
 	ctx := context.Background()
-	srvAuth := client.Auth{
+
+	method := http.MethodGet
+	path := "mypath"
+	expectedRespBodyBytes := []byte("myresponse")
+
+	serverAuth := client.Auth{
 		Username: "myuser",
 		Password: "mypassword",
 		Token:    "mytoken",
 	}
-	clAuth := client.Auth{
+	clientAuth := client.Auth{
 		Username: "notmyuser",
 		Password: "notmypassword",
 	}
-	mockRequest := MockHandlerKey{
-		Path:   "mypath",
-		Method: http.MethodGet,
-	}
-	expectedRespBodyBytes := []byte("myresponse")
 
-	svr := MockTestServer(&srvAuth, MockHandlerMap{
-		mockRequest: MockServerHandlerGeneratorReturnBytes(expectedRespBodyBytes),
-	})
+	s := NewMockTestServer(&serverAuth, t)
+	s.AddHandler(http.MethodGet, client.URLTargetForAuth, MockServerHandlerGeneratorReturnBytes(expectedRespBodyBytes))
+	defer s.Close()
 
-	url, _ := url.Parse(svr.URL)
-	c, err := client.NewClient(url, &clAuth, svr.Client())
+	u, _ := url.Parse(s.testServer.URL)
+	c, err := client.NewClient(u, &clientAuth, s.testServer.Client())
 	if err != nil {
 		t.Fatalf("Could not make a client: %s", err)
 	}
 
-	req, err := c.RequestFromTargetAndBytesBody(ctx, mockRequest.Method, mockRequest.Path, []byte{})
+	req, err := c.RequestFromTargetAndBytesBody(ctx, method, path, []byte{})
 	if err != nil {
 		t.Fatalf("Could not make a request: %s", err)
 	}
@@ -90,6 +80,6 @@ func TestBearerTokenHeaderStringGenerate(t *testing.T) {
 	headerString := client.BearerTokenHeaderValue(token)
 
 	if !strings.Contains(headerString, "Bearer") {
-		t.Error("Bearer header token build fail")
+		t.Error("Bearer header test token build fail")
 	}
 }

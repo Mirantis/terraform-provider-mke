@@ -10,20 +10,22 @@ import (
 
 func TestGoodAuthRequest(t *testing.T) {
 	ctx := context.Background()
-	srvAuth := client.Auth{
+
+	serverAuth := client.Auth{
 		Username: "myuser",
 		Password: "mypassword",
 		Token:    "mytoken",
 	}
-	clAuth := client.Auth{
-		Username: srvAuth.Username,
-		Password: srvAuth.Password,
+	clientAuth := client.Auth{
+		Username: serverAuth.Username,
+		Password: serverAuth.Password,
 	}
 
-	svr := MockTestServer(&srvAuth, MockHandlerMap{})
+	s := NewMockTestServer(&serverAuth, t)
+	defer s.Close()
 
-	u, _ := url.Parse(svr.URL)
-	c, err := client.NewClient(u, &clAuth, svr.Client())
+	u, _ := url.Parse(s.testServer.URL)
+	c, err := client.NewClient(u, &clientAuth, s.testServer.Client())
 	if err != nil {
 		t.Fatalf("Could not make a client: %s", err)
 	}
@@ -32,29 +34,33 @@ func TestGoodAuthRequest(t *testing.T) {
 		t.Error("Login request failed")
 	}
 
-	if clAuth.Token != srvAuth.Token {
-		t.Errorf("ApiLogin did not set the expected token: %s != %s", clAuth.Token, srvAuth.Token)
+	if clientAuth.Token != serverAuth.Token {
+		t.Errorf("ApiLogin did not set the expected token: %s != %s", clientAuth.Token, serverAuth.Token)
 	}
 }
 
 func TestBadAuthRequest(t *testing.T) {
 	ctx := context.Background()
-	srvAuth := client.Auth{
+	serverAuth := client.Auth{
 		Username: "myuser",
 		Password: "mypassword",
 		Token:    "mytoken",
 	}
-
-	svr := MockTestServer(&srvAuth, MockHandlerMap{})
-
-	url, _ := url.Parse(svr.URL)
-
-	clAuthBadUsername := client.Auth{
+	clientAuthBadUsername := client.Auth{
 		Username: "notmyser",
-		Password: srvAuth.Password,
+		Password: serverAuth.Password,
+	}
+	clientAuthBadPassword := client.Auth{
+		Username: serverAuth.Username,
+		Password: "notmypassword",
 	}
 
-	c, err := client.NewClient(url, &clAuthBadUsername, svr.Client())
+	s := NewMockTestServer(&serverAuth, t)
+	defer s.Close()
+
+	u, _ := url.Parse(s.testServer.URL)
+
+	c, err := client.NewClient(u, &clientAuthBadUsername, s.testServer.Client())
 	if err != nil {
 		t.Fatalf("Could not make a client: %s", err)
 	}
@@ -63,12 +69,7 @@ func TestBadAuthRequest(t *testing.T) {
 		t.Error("Login request did not fail with bad username")
 	}
 
-	clAuthBadPassword := client.Auth{
-		Username: srvAuth.Username,
-		Password: "notmypassword",
-	}
-
-	c, err = client.NewClient(url, &clAuthBadPassword, svr.Client())
+	c, err = client.NewClient(u, &clientAuthBadPassword, s.testServer.Client())
 	if err != nil {
 		t.Fatalf("Could not make a client: %s", err)
 	}
