@@ -40,17 +40,26 @@ type ResponseAccount struct {
 	TeamsCount   int    `json:"teamsCount"`
 }
 
+// ResponseAccounts struct.
+type ResponseAccounts struct {
+	UsersCount    int               `json:"usersCount"`
+	OrgsCount     int               `json:"orgsCount"`
+	ResourceCount int               `json:"resourceCount"`
+	NextPageStart string            `json:"nextPageStart"`
+	Accounts      []ResponseAccount `json:"accounts"`
+}
+
 // Account filters enum.
 type AccountFilter string
 
 const (
-	Users                AccountFilter = "user"
-	Orgs                 AccountFilter = "orgs"
-	Admins               AccountFilter = "admins"
-	NonAdmins            AccountFilter = "non-admins"
-	ActiveUsers          AccountFilter = "active-users"
-	InactiveUsers        AccountFilter = "inactive-users"
-	URLTargetForAccounts               = "accounts"
+	AccountFilterUsers         AccountFilter = "user"
+	AccountFilterOrgs          AccountFilter = "orgs"
+	AccountFilterAdmins        AccountFilter = "admins"
+	AccountFilterNonAdmins     AccountFilter = "non-admins"
+	AccountFilterActiveUsers   AccountFilter = "active-users"
+	AccountFilterInactiveUsers AccountFilter = "inactive-users"
+	URLTargetForAccounts                     = "accounts"
 )
 
 // APIFormOfFilter is a string readable form of the AccountFilters enum.
@@ -167,15 +176,7 @@ func (c *Client) ApiReadAccounts(ctx context.Context, accFilter AccountFilter) (
 			accFilter.APIFormOfFilter(), err)
 	}
 
-	accs := struct {
-		UsersCount    int    `json:"usersCount"`
-		OrgsCount     int    `json:"orgsCount"`
-		ResourceCount int    `json:"resourceCount"`
-		NextPageStart string `json:"nextPageStart"`
-
-		Accounts []ResponseAccount `json:"accounts"`
-	}{}
-
+	var accs ResponseAccounts
 	if err := resp.JSONMarshallBody(&accs); err != nil {
 		return []ResponseAccount{}, fmt.Errorf("reading accounts in bulk '%s' failed. %w: %s",
 			accFilter.APIFormOfFilter(), ErrUnmarshaling, err)

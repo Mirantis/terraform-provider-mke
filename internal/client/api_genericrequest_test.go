@@ -13,23 +13,19 @@ import (
 
 func TestGoodGenericRequest(t *testing.T) {
 	ctx := context.Background()
-	mockRequest := MockHandlerKey{
-		Path:   "mypath",
-		Method: http.MethodGet,
-	}
+	auth := commonTestAuth
+
+	method := http.MethodGet
+	path := "my/path"
 	expectedRespBodyBytes := []byte("myresponse")
 
-	svr := MockTestServer(nil, MockHandlerMap{
-		mockRequest: MockServerHandlerGeneratorReturnBytes(expectedRespBodyBytes),
-	})
+	s := NewMockTestServer(&auth, t)
+	s.AddHandler(method, path, MockServerHandlerGeneratorReturnBytes(expectedRespBodyBytes))
+	defer s.Close()
 
-	u, _ := url.Parse(svr.URL)
-	c, err := client.NewClient(u, nil, svr.Client())
-	if err != nil {
-		t.Fatalf("Could not make a client: %s", err)
-	}
+	c, _ := s.Client()
 
-	req, err := c.RequestFromTargetAndBytesBody(ctx, mockRequest.Method, mockRequest.Path, []byte{})
+	req, err := c.RequestFromTargetAndBytesBody(ctx, method, path, []byte{})
 	if err != nil {
 		t.Fatalf("Could not make a request: %s", err)
 	}
@@ -42,35 +38,32 @@ func TestGoodGenericRequest(t *testing.T) {
 
 	responseBodyBytes, err := resp.BodyBytes()
 	if err != nil {
-		t.Fatalf("Authorized request execute did not produce and body: %s", err)
+		t.Fatalf("Generid request execute did not produce and body: %s", err)
 	}
 	if string(responseBodyBytes) != string(expectedRespBodyBytes) {
-		t.Errorf("Authorized request returned bad body: %s", string(responseBodyBytes))
+		t.Errorf("Generic request returned bad body: %s", string(responseBodyBytes))
 	}
 
 }
 
 func TestGoodGenericRequestJSON(t *testing.T) {
 	ctx := context.Background()
-	mockRequest := MockHandlerKey{
-		Path:   "mypath",
-		Method: http.MethodPost,
-	}
+	auth := commonTestAuth
+
+	method := http.MethodPost
+	path := "my/path"
 	expectedResp := map[string]string{
-		"first": "one",
+		"first":  "one",
+		"second": "two",
 	}
 
-	svr := MockTestServer(nil, MockHandlerMap{
-		mockRequest: MockServerHandlerGeneratorReturnJson(expectedResp),
-	})
+	s := NewMockTestServer(&auth, t)
+	s.AddHandler(method, path, MockServerHandlerGeneratorReturnJson(expectedResp))
+	defer s.Close()
 
-	url, _ := url.Parse(svr.URL)
-	c, err := client.NewClient(url, nil, svr.Client())
-	if err != nil {
-		t.Fatalf("Could not make a client: %s", err)
-	}
+	c, _ := s.Client()
 
-	req, err := c.RequestFromTargetAndBytesBody(ctx, mockRequest.Method, mockRequest.Path, []byte{})
+	req, err := c.RequestFromTargetAndBytesBody(ctx, method, path, []byte{})
 	if err != nil {
 		t.Fatalf("Could not make a request: %s", err)
 	}
@@ -85,7 +78,7 @@ func TestGoodGenericRequestJSON(t *testing.T) {
 	var responseBodyMap map[string]string
 
 	if err := resp.JSONMarshallBody(&responseBodyMap); err != nil {
-		t.Fatalf("Authorized request execute did not produce and body: %s", err)
+		t.Fatalf("Generic request execute did not produce and body: %s", err)
 	}
 
 	for k, v := range responseBodyMap {
@@ -100,22 +93,18 @@ func TestGoodGenericRequestJSON(t *testing.T) {
 
 func TestBadRequestNotFound(t *testing.T) {
 	ctx := context.Background()
-	mockRequest := MockHandlerKey{
-		Path:   "mypath",
-		Method: http.MethodGet,
-	}
+	auth := commonTestAuth
 
-	svr := MockTestServer(nil, MockHandlerMap{
-		mockRequest: MockServerHandlerGeneratorReturnResponseStatus(http.StatusNotFound),
-	})
+	method := http.MethodPost
+	path := "my/path"
 
-	url, _ := url.Parse(svr.URL)
-	c, err := client.NewClient(url, nil, svr.Client())
-	if err != nil {
-		t.Fatalf("Could not make a client: %s", err)
-	}
+	s := NewMockTestServer(&auth, t)
+	s.AddHandler(method, path, MockServerHandlerGeneratorReturnResponseStatus(http.StatusNotFound))
+	defer s.Close()
 
-	req, err := c.RequestFromTargetAndBytesBody(ctx, mockRequest.Method, mockRequest.Path, []byte{})
+	c, _ := s.Client()
+
+	req, err := c.RequestFromTargetAndBytesBody(ctx, method, path, []byte{})
 	if err != nil {
 		t.Fatalf("Could not make a request: %s", err)
 	}
@@ -129,27 +118,18 @@ func TestBadRequestNotFound(t *testing.T) {
 
 func TestGoodGenericAuthenticatedRequest(t *testing.T) {
 	ctx := context.Background()
-	mockRequest := MockHandlerKey{
-		Path:   "mypath",
-		Method: http.MethodGet,
-	}
-	auth := client.Auth{
-		Username: "myuser",
-		Password: "mypassword",
-		Token:    "mytoken",
-	}
+	auth := commonTestAuth
 
-	svr := MockTestServer(&auth, MockHandlerMap{
-		mockRequest: MockServerHandlerGeneratorReturnBytes([]byte{}),
-	})
+	method := http.MethodPost
+	path := "my/path"
 
-	url, _ := url.Parse(svr.URL)
-	c, err := client.NewClient(url, &auth, svr.Client())
-	if err != nil {
-		t.Fatalf("Could not make a client: %s", err)
-	}
+	s := NewMockTestServer(&auth, t)
+	s.AddHandler(method, path, MockServerHandlerGeneratorReturnBytes([]byte{}))
+	defer s.Close()
 
-	req, err := c.RequestFromTargetAndBytesBody(ctx, mockRequest.Method, mockRequest.Path, []byte{})
+	c, _ := s.Client()
+
+	req, err := c.RequestFromTargetAndBytesBody(ctx, method, path, []byte{})
 	if err != nil {
 		t.Fatalf("Could not make a request: %s", err)
 	}
@@ -164,74 +144,36 @@ func TestGoodGenericAuthenticatedRequest(t *testing.T) {
 
 func TestAuthenticatedPreventsUnauthenticatedRequest(t *testing.T) {
 	ctx := context.Background()
-	mockRequest := MockHandlerKey{
-		Path:   "mypath",
-		Method: http.MethodGet,
-	}
-	auth := client.Auth{
+
+	method := http.MethodGet
+	path := "mypath"
+
+	serverAuth := client.Auth{
 		Username: "myuser",
 		Password: "mypassword",
 		Token:    "mytoken",
 	}
-
-	svr := MockTestServer(&auth, MockHandlerMap{
-		mockRequest: MockServerHandlerGeneratorReturnBytes([]byte{}),
-	})
-
-	url, _ := url.Parse(svr.URL)
-	c, err := client.NewClient(url, &auth, svr.Client())
-	if err != nil {
-		t.Fatalf("Could not make a client: %s", err)
-	}
-
-	req, err := c.RequestFromTargetAndBytesBody(ctx, mockRequest.Method, mockRequest.Path, []byte{})
-	if err != nil {
-		t.Fatalf("Could not make a request: %s", err)
-	}
-
-	resp, err := c.ApiGeneric(ctx, req)
-	if err == nil {
-		b, _ := io.ReadAll(resp.Body)
-		t.Fatalf("UnAuthenticated request execute was allowed: %s; %s", err, b)
-	}
-
-}
-
-func TestBadGenericAuthenticatedRequest(t *testing.T) {
-	ctx := context.Background()
-	mockRequest := MockHandlerKey{
-		Path:   "mypath",
-		Method: http.MethodGet,
-	}
-	srvAuth := client.Auth{
-		Username: "myuser",
-		Password: "mypassword",
-		Token:    "mytoken",
-	}
-	clAuth := client.Auth{
+	clientAuth := client.Auth{
 		Username: "notmyuser",
 		Password: "notmypassword",
 	}
 
-	svr := MockTestServer(&srvAuth, MockHandlerMap{
-		mockRequest: MockServerHandlerGeneratorReturnBytes([]byte{}),
-	})
+	s := NewMockTestServer(&serverAuth, t)
+	s.AddHandler(method, path, MockServerHandlerGeneratorReturnBytes([]byte{}))
+	defer s.Close()
 
-	url, _ := url.Parse(svr.URL)
-	c, err := client.NewClient(url, &clAuth, svr.Client())
-	if err != nil {
-		t.Fatalf("Could not make a client: %s", err)
-	}
+	u, _ := url.Parse(s.testServer.URL)
+	c, _ := client.NewClient(u, &clientAuth, s.testServer.Client())
 
-	req, err := c.RequestFromTargetAndBytesBody(ctx, mockRequest.Method, mockRequest.Path, []byte{})
+	req, err := c.RequestFromTargetAndBytesBody(ctx, method, path, []byte{})
 	if err != nil {
 		t.Fatalf("Could not make a request: %s", err)
 	}
 
-	resp, err := c.ApiGeneric(ctx, req)
+	resp, err := c.ApiAuthorizedGeneric(ctx, req)
 	if err == nil {
 		b, _ := io.ReadAll(resp.Body)
-		t.Fatalf("Authenticated request execute passed when it should have failed: %s; %s", err, b)
+		t.Fatalf("UnAuthenticated request execute was allowed: %s; %s", err, b)
 	}
 
 }
