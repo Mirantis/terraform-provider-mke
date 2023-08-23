@@ -57,6 +57,9 @@ func TestRequestBodyJson(t *testing.T) {
 		t.Error("Failed to read request bytes")
 	}
 
+	if len(bodyBytes) == 0 {
+		t.Error("request body from json of object produced a zero length body")
+	}
 	if string(bodyBytes) != string(expectedBodyBytes) {
 		t.Errorf("JSON req builder has unexpected body bytes: %s != %s", string(bodyBytes), string(expectedBodyBytes))
 	}

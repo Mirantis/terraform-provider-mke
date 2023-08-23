@@ -24,7 +24,7 @@ fmt:
 # Lint by running golangci-lint in a docker container
 .PHONY: lint
 lint:
-	docker run -ti --rm -v "$(CURDIR):/data" -w "/data" golangci/golangci-lint:latest golangci-lint run --timeout=600s
+	docker run -ti --rm -v "$(CURDIR):/data" -w "/data" golangci/golangci-lint:latest golangci-lint run
 
 # Local install of the plugin
 .PHONY: local

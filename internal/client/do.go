@@ -23,7 +23,7 @@ func (c *Client) doAuthorizedRequest(req *http.Request) (*Response, error) {
 func (c *Client) doRequest(req *http.Request) (*Response, error) {
 	apiRes, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error occurred in http request: %w \nreq: %s", err, requestDebug(req))
 	}
 
 	res := &Response{
@@ -43,7 +43,7 @@ func (c *Client) doRequest(req *http.Request) (*Response, error) {
 			return res, fmt.Errorf("%w: Server Error: %d : %s", ErrServerError, res.StatusCode, b)
 		}
 
-		return res, fmt.Errorf("%w: Status code: %d : %s", ErrResponseError, res.StatusCode, b)
+		return res, fmt.Errorf("%w: Status code: %d : %s\nreq: %s", ErrResponseError, res.StatusCode, b, requestDebug(req))
 	}
 
 	return res, nil
