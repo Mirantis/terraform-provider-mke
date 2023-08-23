@@ -138,10 +138,7 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 	} else {
 		rAcc, err := cl.ApiCreateAccount(ctx, acc)
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Unexpected Create Account error",
-				err.Error(),
-			)
+			resp.Diagnostics.AddError("Create account error", err.Error())
 			return
 		}
 
@@ -175,7 +172,7 @@ func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	} else {
 		rAcc, err := cl.ApiReadAccount(ctx, data.Name.ValueString())
 		if err != nil {
-			resp.Diagnostics.AddError("Client Error", err.Error())
+			resp.Diagnostics.AddError("Read account error", err.Error())
 			return
 		}
 		data.Id = types.StringValue(rAcc.ID)
@@ -216,7 +213,7 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		tflog.Debug(ctx, fmt.Sprintf("The retuerned 'user' %+v", rAcc))
 
 		if err != nil {
-			resp.Diagnostics.AddError("Client Error", err.Error())
+			resp.Diagnostics.AddError("Update account error", err.Error())
 			return
 		}
 
@@ -245,7 +242,7 @@ func (r *UserResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	if r.providerModel.TestingMode() {
 		resp.Diagnostics.AddWarning("testing mode warning", "mke user resource handler is in testing mode, no deletion will be run.")
 	} else if err := cl.ApiDeleteAccount(ctx, data.Id.ValueString()); err != nil {
-		resp.Diagnostics.AddError("Client Error", err.Error())
+		resp.Diagnostics.AddError("Delete account error", err.Error())
 		return
 	}
 

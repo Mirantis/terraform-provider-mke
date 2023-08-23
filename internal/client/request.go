@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 )
 
@@ -19,5 +20,27 @@ func (c *Client) RequestFromTargetAndJSONBody(ctx context.Context, method, targe
 		return nil, err
 	}
 
-	return c.RequestFromTargetAndBytesBody(ctx, method, target, bodyBytes)
+	r, err := c.RequestFromTargetAndBytesBody(ctx, method, target, bodyBytes)
+	if err == nil {
+		r.Header.Set("Content-Type", "application/json")
+	}
+
+	return r, err
+}
+
+func requestDebug(req *http.Request) string {
+	bbr, _ := req.GetBody()
+	bb, _ := io.ReadAll(bbr)
+
+	re := struct {
+		Headers http.Header `json:"headers"`
+		Body    string      `json:"body"`
+	}{
+		Headers: req.Header,
+		Body:    string(bb),
+	}
+
+	rj, _ := json.MarshalIndent(re, "\n", "  ")
+
+	return string(rj)
 }
