@@ -26,6 +26,7 @@ type UserResourceModel struct {
 	Password types.String `tfsdk:"password"`
 	FullName types.String `tfsdk:"full_name"`
 	IsAdmin  types.Bool   `tfsdk:"is_admin"`
+	IsActive types.Bool   `tfsdk:"is_active"`
 	Id       types.String `tfsdk:"id"`
 }
 
@@ -76,6 +77,12 @@ func (r *UserResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Default:             booldefault.StaticBool(false),
 				Optional:            true,
 			},
+			"is_active": schema.BoolAttribute{
+				MarkdownDescription: "Is the user active",
+				Computed:            true,
+				Default:             booldefault.StaticBool(true),
+				Optional:            true,
+			},
 		},
 		MarkdownDescription: "User resource",
 	}
@@ -119,6 +126,7 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 		Password:   pass,
 		FullName:   data.FullName.ValueString(),
 		IsAdmin:    data.IsAdmin.ValueBool(),
+		IsActive:   data.IsActive.ValueBool(),
 		IsOrg:      false,
 		SearchLDAP: false,
 	}

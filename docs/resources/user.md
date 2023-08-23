@@ -23,6 +23,7 @@ User resource
 ### Optional
 
 - `full_name` (String) The full name of the user
+- `is_active` (Boolean) Is the user active
 - `is_admin` (Boolean) Is the user an admin
 
 ### Read-Only
