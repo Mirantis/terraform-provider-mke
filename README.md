@@ -2,7 +2,11 @@
 
 Mirantis MKE provider for managing resources in a running MKE stack.
 
-This provider does not currently install MKE.
+This provider does not currently install MKE. The goal of the provider 
+is to interact with an existing installation.
+
+This provider is developed internally, and comes with no warranty. Use it 
+at your own risk.
 
 ## Requirements
 
